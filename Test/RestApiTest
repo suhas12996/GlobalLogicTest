@@ -1,0 +1,149 @@
+import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
+import io.restassured.response.Response;
+import org.testng.Assert;
+import org.testng.annotations.Test;
+
+import static io.restassured.RestAssured.given;
+
+public class RestApiTest extends TestBase {
+    
+    @Test
+    public void testGetRequest() {
+        test = extent.createTest("GET Request Test");
+
+        Response response = given()
+                .when()
+                .get("/posts/1")
+                .then()
+                .statusCode(200)
+                .extract().response();
+        
+        Assert.assertEquals(response.getStatusCode(), 200, "Status Code Validation");
+        test.pass("GET Request Passed");
+    }
+
+@Test
+    public void testPostRequest() {
+     
+        String requestBody = "{\n" +
+                             "  \"args\": \"data\",\n" +
+                             "  \"files\": \"form\",\n" +
+                             "  \"userId\": 1\n" +
+                             "}";
+
+      
+        given()
+            .contentType("application/json")
+            .body(requestBody)
+        .when()
+            .post("/posts")
+        .then()
+            .statusCode(201)
+            .body("args", equalTo("GlobalLogic"))
+            .body("data", equalTo("suhas"))
+	    .body("files", equalTo("1.PNG"))
+            .body("form", equalTo("Filled"))
+            .body("userId", notNullValue());
+    }
+}
+
+    @Test
+    public void testDelayedResponse() {
+        test = extent.createTest("Delayed Response Test");
+
+        int delayTime = 3; 
+
+        Response response = given()
+                .when()
+                .get("/delay/" + delayTime)
+                .then()
+                .statusCode(200)
+                .extract().response();
+        
+        Assert.assertEquals(response.getStatusCode(), 200, "Status Code Validation");
+        test.pass("Delayed Response Test Passed");
+    }
+
+    @Test
+    public void testUnauthorizedAccess() {
+        test = extent.createTest("Unauthorized Access Test");
+
+        Response response = given()
+                .when()
+                .get("/private")
+                .then()
+                .statusCode(401)
+                .extract().response();
+        
+        Assert.assertEquals(response.getStatusCode(), 401, "Unauthorized Access Validation");
+        test.pass("Unauthorized Access Test Passed");
+    }
+
+
+    @Test
+    public void testNegativeGetRequest() {
+        test = extent.createTest("Negative GET Request Test");
+
+        Response response = given()
+                .when()
+                .get("/invalidEndpoint")
+                .then()
+                .statusCode(404)
+                .extract().response();
+        
+        Assert.assertEquals(response.getStatusCode(), 404, "Status Code Validation");
+        test.pass("Negative GET Request Passed");
+    }
+
+   
+
+@Test
+    public void testNegativePostRequest_InvalidJson() {
+        test = extent.createTest("Negative POST Request - Invalid JSON");
+
+        String invalidJsonBody = "{ \"args\": \"\", \"data\": \"This is a test body\", \"files\": null }";
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(invalidJsonBody)
+        .when()
+            .post("/posts")
+        .then()
+            .statusCode(400)
+            .log().all();
+
+        test.pass("Negative POST request with invalid JSON test passed.");
+    }
+
+@Test
+  	public void testInvalidDataFields() {
+        String invalidRequestBody = "{ \"invalid\": \"data\" }";
+        Response postResponse = given()
+                .header("Content-type", "application/json")
+                .body(invalidRequestBody)
+                .post("/post");
+        Assert.assertEquals(postResponse.getStatusCode(), 400);
+        test.pass("POST request with invalid data returns 400");
+}
+
+    @Test
+    public void testNegativePostRequest_MissingFields() {
+        test = extent.createTest("Negative POST Request - Missing Fields");
+
+        Map<String, Object> jsonBody = new HashMap<>();
+        jsonBody.put("args", "data");
+
+        given()
+            .contentType(ContentType.JSON)
+            .body(jsonBody)
+        .when()
+            .post("/posts")
+        .then()
+            .statusCode(400)
+            .log().all();
+
+        test.pass("Negative POST request with missing fields test passed.");
+    }
+
+}
